@@ -63,11 +63,11 @@ bool PwCrack::compare(const ppl7::ByteArrayPtr &check_pw)
 {
     tries++;
     int new_progress=tries*100/chances;
-    if (new_progress!=progress) {
+    if (new_progress!=progress || tries%1000000==0) {
         progress=new_progress;
         double duration=ppl7::GetMicrotime()-start_time;
         double prediction=duration/tries*chances;
-        if (progress>0) {
+        if (progress>0 || tries>100000) {
             printf ("%d%% in %0.3fs, runtime prediction: %0.3fs, time left: %0.3fs            \r", progress, duration, prediction,prediction-duration);
         } else {
             printf ("...waiting for progress...       \r");
@@ -112,7 +112,8 @@ bool PwCrack::crack(const ppl7::String &encrypted_pw)
 
         printf("length=%d, chances=%lu\n",length, chances);
         if (iterate_over_position(length-1)) return true;
-        printf("  ==> Das hat %d Sekunden gedauert\n", (int)(ppl7::GetMicrotime()-start_time));
+        printf("  ==> Das hat %0.3f Sekunden gedauert                                                     \n",
+            ppl7::GetMicrotime()-start_time);
     }
     return false;
 }
@@ -120,16 +121,19 @@ bool PwCrack::crack(const ppl7::String &encrypted_pw)
 
 int main(int argc, char **argv)
 {
-    //ppl7::String password="9f9aca7eb962d89a51b2bd1b6259d417af3f9e060469e1ab559bd428b1c619ab"; // denic
+    ppl7::String password="9f9aca7eb962d89a51b2bd1b6259d417af3f9e060469e1ab559bd428b1c619ab"; // denic
     //ppl7::String password="7273854d0e9b34a60907bdde8293415a0f6edd6b8b1ef3957fcabd584be869a2"; // dcba
-    ppl7::String password="5f76e84d00de1261757445d5399dc9748603cfa98be6d457b15f3e35ed64cad2"; // bk2je6ws9
+    //ppl7::String password="5f76e84d00de1261757445d5399dc9748603cfa98be6d457b15f3e35ed64cad2"; // bk2je6ws9
     PwCrack cracker;
-    cracker.setLength(6,6);
+    cracker.setLength(1,9);
     cracker.setAllowedChars("abcdefghijklmnopqrstuvwxyz0123456789");
+    double start=ppl7::GetMicrotime();
     if (cracker.crack(password)) {
-        printf ("Passwort gefunden, es lautet: %s\n",(const char*)cracker.password());
+        printf ("\nPasswort gefunden, es lautet: %s\n",(const char*)cracker.password());
     } else {
-        printf ("Passwort nicht gefunden!\n");
+        printf ("\nPasswort nicht gefunden!\n");
     }
+    printf("Gesamtlaufzeit: %0.3f Sekunden\n",
+            ppl7::GetMicrotime()-start);
     return 0;
 }
