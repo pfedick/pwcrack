@@ -9,11 +9,13 @@ INCLUDE	= -Iinclude
 CFLAGS  = -ggdb -O2 -Wall  $(INCLUDE) `ppl7-config --cflags`
 LIBS    = -L/usr/local/lib  `ppl7-config --libs`  -lstdc++
 
+ASM = nasm -f win64
+
 LIBDEP  := $(shell ppl7-config --ppllib release)
 
 PROGRAM	= pwcrack
 
-OBJECTS=compile/main.o
+OBJECTS=compile/main.o 
 
 $(PROGRAM): $(OBJECTS) $(LIBDEP)
 	$(CXX) -o $(PROGRAM) $(OBJECTS) $(LIBS)
@@ -26,4 +28,10 @@ clean:
 compile/main.o: main.cpp Makefile
 	- @mkdir -p compile
 	$(CXX) -o compile/main.o -c main.cpp $(CFLAGS)
+
+
+compile/sha256.o: sha256.asm Makefile
+	- @mkdir -p compile
+	$(ASM) -o compile/sha256.o sha256.asm
+	ld compile/sha256.o -o sha256
 
