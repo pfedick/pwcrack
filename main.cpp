@@ -1,12 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ppl7.h>
+#include <math.h>
 #include <ppl7-crypto.h>
 
 
 class PwCrack
 {
     private:
+        uint64_t chances;
+        uint64_t tries;
+        double start_time;
+        int progress;
+
         int minlength;
         int maxlength;
         int num_chars;
@@ -55,6 +61,19 @@ void PwCrack::setAllowedChars(const ppl7::String &chars)
 
 bool PwCrack::compare(const ppl7::ByteArrayPtr &check_pw)
 {
+    tries++;
+    int new_progress=tries*100/chances;
+    if (new_progress!=progress) {
+        progress=new_progress;
+        double duration=ppl7::GetMicrotime()-start_time;
+        double prediction=duration/tries*chances;
+        if (progress>0) {
+            printf ("%d%% in %0.3fs, runtime prediction: %0.3fs, time left: %0.3fs            \r", progress, duration, prediction,prediction-duration);
+        } else {
+            printf ("...waiting for progress...       \r");
+        }
+        fflush(stdout);
+    }
     ppl7::ByteArray ba=ppl7::Digest::sha256(check_pw);
     if (ba==search_ba) {
         return true;
@@ -85,9 +104,13 @@ bool PwCrack::crack(const ppl7::String &encrypted_pw)
     this->encrypted_pw=encrypted_pw;
     search_ba=ppl7::Hex2ByteArray(encrypted_pw);
     for (int length=minlength;length<=maxlength;length++) {
-        double start_time=ppl7::GetMicrotime();
+        start_time=ppl7::GetMicrotime();
         pw_buffer.calloc(length);
-        printf("length=%d\n",length);
+        tries=0;
+        progress=-1;
+        chances=powl(num_chars,length);
+
+        printf("length=%d, chances=%lu\n",length, chances);
         if (iterate_over_position(length-1)) return true;
         printf("  ==> Das hat %d Sekunden gedauert\n", (int)(ppl7::GetMicrotime()-start_time));
     }
@@ -101,7 +124,7 @@ int main(int argc, char **argv)
     //ppl7::String password="7273854d0e9b34a60907bdde8293415a0f6edd6b8b1ef3957fcabd584be869a2"; // dcba
     ppl7::String password="5f76e84d00de1261757445d5399dc9748603cfa98be6d457b15f3e35ed64cad2"; // bk2je6ws9
     PwCrack cracker;
-    cracker.setLength(9,9);
+    cracker.setLength(6,6);
     cracker.setAllowedChars("abcdefghijklmnopqrstuvwxyz0123456789");
     if (cracker.crack(password)) {
         printf ("Passwort gefunden, es lautet: %s\n",(const char*)cracker.password());
