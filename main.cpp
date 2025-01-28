@@ -7,10 +7,12 @@
 class PwCrack
 {
     private:
+        int minlength;
         int maxlength;
         int num_chars;
         ppl7::ByteArray allowed_chars;
         ppl7::String encrypted_pw;
+        ppl7::ByteArray search_ba;
 
         ppl7::ByteArray pw_buffer;
 
@@ -19,7 +21,7 @@ class PwCrack
 
     public:
         PwCrack();
-        void setMaxLength(int length);
+        void setLength(int min, int max);
         void setAllowedChars(const ppl7::String &chars);
 
 
@@ -31,15 +33,17 @@ class PwCrack
 
 PwCrack::PwCrack()
 {
-    setMaxLength(5);
+    setLength(1,5);
     setAllowedChars("abcdefghijklmnopqrstuvwxyz");
 
 }
 
-void PwCrack::setMaxLength(int length)
+void PwCrack::setLength(int min, int max)
 {
-    maxlength=length;
-    pw_buffer.calloc(length+1);
+    if (min<0) throw ppl7::InvalidArgumentsException();
+    if (max<min) throw ppl7::InvalidArgumentsException();
+    minlength=min;
+    maxlength=max;
 }
 
 void PwCrack::setAllowedChars(const ppl7::String &chars)
@@ -52,11 +56,7 @@ void PwCrack::setAllowedChars(const ppl7::String &chars)
 bool PwCrack::compare(const ppl7::ByteArrayPtr &check_pw)
 {
     ppl7::ByteArray ba=ppl7::Digest::sha256(check_pw);
-    ppl7::String p=ba.toHex();
-    //printf("checking: >>%s<< %d, p=%s <=> %s\n",(const char*)check_pw,check_pw.size(),(const char*)p,(const char*)encrypted_pw);
-    if (p==encrypted_pw) {
-        printf ("Passwort gefunden, es lautet: %s\n",(const char*)check_pw);
-        exit(1);
+    if (ba==search_ba) {
         return true;
     }
     return false;
@@ -83,9 +83,13 @@ bool PwCrack::iterate_over_position(int position)
 bool PwCrack::crack(const ppl7::String &encrypted_pw)
 {
     this->encrypted_pw=encrypted_pw;
-    for (int length=4;length<=maxlength;length++) {
+    search_ba=ppl7::Hex2ByteArray(encrypted_pw);
+    for (int length=minlength;length<=maxlength;length++) {
+        double start_time=ppl7::GetMicrotime();
         pw_buffer.calloc(length);
+        printf("length=%d\n",length);
         if (iterate_over_position(length-1)) return true;
+        printf("  ==> Das hat %d Sekunden gedauert\n", (int)(ppl7::GetMicrotime()-start_time));
     }
     return false;
 }
@@ -93,12 +97,12 @@ bool PwCrack::crack(const ppl7::String &encrypted_pw)
 
 int main(int argc, char **argv)
 {
-
-    ppl7::String password="9f9aca7eb962d89a51b2bd1b6259d417af3f9e060469e1ab559bd428b1c619ab"; // denic
+    //ppl7::String password="9f9aca7eb962d89a51b2bd1b6259d417af3f9e060469e1ab559bd428b1c619ab"; // denic
     //ppl7::String password="7273854d0e9b34a60907bdde8293415a0f6edd6b8b1ef3957fcabd584be869a2"; // dcba
+    ppl7::String password="5f76e84d00de1261757445d5399dc9748603cfa98be6d457b15f3e35ed64cad2"; // bk2je6ws9
     PwCrack cracker;
-    cracker.setMaxLength(5);
-    cracker.setAllowedChars("abcdefghijklmnopqrstuvwxyz");
+    cracker.setLength(9,9);
+    cracker.setAllowedChars("abcdefghijklmnopqrstuvwxyz0123456789");
     if (cracker.crack(password)) {
         printf ("Passwort gefunden, es lautet: %s\n",(const char*)cracker.password());
     } else {
