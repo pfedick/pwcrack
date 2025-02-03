@@ -3,7 +3,7 @@
 #include <ppl7.h>
 #include <math.h>
 #include <ppl7-crypto.h>
-
+#include "sha256.h"
 
 class PwCrack
 {
@@ -21,6 +21,7 @@ class PwCrack
         ppl7::ByteArray search_ba;
 
         ppl7::ByteArray pw_buffer;
+        ppl7::ByteArray digest_buffer;
 
         bool compare(const ppl7::ByteArrayPtr &check_pw);
         bool iterate_over_position(int position);
@@ -41,6 +42,7 @@ PwCrack::PwCrack()
 {
     setLength(1,5);
     setAllowedChars("abcdefghijklmnopqrstuvwxyz");
+    digest_buffer.malloc(32);
 
 }
 
@@ -74,8 +76,10 @@ bool PwCrack::compare(const ppl7::ByteArrayPtr &check_pw)
         }
         fflush(stdout);
     }
-    ppl7::ByteArray ba=ppl7::Digest::sha256(check_pw);
-    if (ba==search_ba) {
+    SHA256_hash(check_pw.ptr(),check_pw.size(),(uint8_t*)digest_buffer.ptr());
+
+    //ppl7::ByteArray ba=ppl7::Digest::sha256(check_pw);
+    if (digest_buffer==search_ba) {
         return true;
     }
     return false;

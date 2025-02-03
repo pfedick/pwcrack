@@ -2,7 +2,7 @@ BITS 64
 ;%include "x86_64.inc"
 
 section .data
-    input_msg db "Hello, world!", 0   ; Message to hash
+    input_msg db "bk2je6ws9", 0       ; Message to hash
     input_len equ $ - input_msg       ; Length of input
     pad_msg resb 64                   ; 512-bit padded message block
     initial_hash dq 0x6a09e667f3bcc908, 0xbb67ae8584caa73b, 0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1
